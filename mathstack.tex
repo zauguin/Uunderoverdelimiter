@@ -1,0 +1,10 @@
+\documentclass{article}
+\directlua{
+  require'Uunderoverdelimiter'
+}
+\usepackage{unicode-math}
+\begin{document}
+\[
+  \text{from} \mathrel{\Uunderoverdelimiter 0 "21A6 {under} {over}} \text{to}
+\]
+\end{document}
