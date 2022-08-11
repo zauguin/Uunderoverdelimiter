@@ -119,6 +119,9 @@ end
 
 local function sub_style(s) return 2*(s//4) + 5 end
 local function sup_style(s) return 2*(s//4) + 4 + s%2 end
+local function num_style(s) return s + 2 - 2*(s//6) end
+local function denom_style(s) return (s + 2 - 2*(s//6)) | 1 end
+local function cramped_style(s) return s | 1 end
 
 local style_mapping = {
   [0] = 'display',
@@ -146,5 +149,8 @@ return {
   scan_math = scan_math,
   sub_style = sub_style,
   sup_style = sup_style,
+  num_style = num_style,
+  denom_style = denom_style,
+  cramped_style = cramped_style,
   style_mapping = style_mapping,
 }

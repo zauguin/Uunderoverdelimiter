@@ -2,6 +2,9 @@ local mathutils = require'mathutils'
 local style_mapping = mathutils.style_mapping
 local sub_style = mathutils.sub_style
 local sup_style = mathutils.sup_style
+local num_style = mathutils.num_style
+local denom_style = mathutils.denom_style
+local cramped_style = mathutils.cramped_style
 
 local math_char = node.id'math_char'
 local style_id = node.id'style'
@@ -31,7 +34,7 @@ local function visit_list(head, visitor, style, penalties)
     local next = current.next
     local mapped, keep_node_link = visitor(current, style, penalties)
     if mapped ~= false and (mapped == true and current or mapped).id == style_id then
-      style = mapped.subtype
+      style = (mapped == true and current or mapped).subtype
     end
     if mapped == true then -- The fast path. Implicitly keep_node_link == true and you better didn't change anything earlier
       if current.id == style_id then
@@ -91,14 +94,20 @@ local function kernel_visitor(base, field, style_transform, visitor, style, pena
   end
 end
 
-local function nss_visitor(n, visitor, style, penalties)
-  kernel_visitor(n, 'nucleus', nil, visitor, style, false)
-  kernel_visitor(n, 'sub', sub_style, visitor, style, false)
-  kernel_visitor(n, 'sup', sup_style, visitor, style, false)
-end
-
-local children_visitor = setmetatable({
-  [node.id'noad'] = nss_visitor,
+local children_visitor = {
+  [node.id'noad'] = function(n, visitor, style, penalties)
+    kernel_visitor(n, 'nucleus', nil, visitor, style, false)
+    kernel_visitor(n, 'sub', sub_style, visitor, style, false)
+    kernel_visitor(n, 'sup', sup_style, visitor, style, false)
+  end,
+  [node.id'accent'] = function(n, visitor, style, penalties)
+    kernel_visitor(n, 'nucleus', cramped_style, visitor, style, false)
+    kernel_visitor(n, 'sub', sub_style, visitor, style, false)
+    kernel_visitor(n, 'sup', sup_style, visitor, style, false)
+    kernel_visitor(n, 'top_accent', nil, visitor, style, false)
+    kernel_visitor(n, 'bot_accent', nil, visitor, style, false)
+    kernel_visitor(n, 'overlay_accent', nil, visitor, style, false)
+  end,
   [node.id'choice'] = function(n, visitor, style, penalties)
     local simple_style = style // 2
     local field = simple_style == 0 and 'display' or simple_style == 1 and 'text' or simple_style == 2 and 'script' or 'scriptscript'
@@ -114,20 +123,25 @@ local children_visitor = setmetatable({
     kernel_visitor(n, 'sub', sub_style, visitor, style, false)
     kernel_visitor(n, 'sup', sup_style, visitor, style, false)
   end,
+  [node.id'fraction'] = function(n, visitor, style, penalties)
+    kernel_visitor(n, 'num', num_style, visitor, style, false)
+    kernel_visitor(n, 'denom', denom_style, visitor, style, false)
+    kernel_visitor(n, 'left', nil, visitor, style, false)
+    kernel_visitor(n, 'right', nil, visitor, style, false)
+    kernel_visitor(n, 'middle', nil, visitor, style, false)
+  end,
+  [node.id'fence'] = function(n, visitor, style, penalties)
+    kernel_visitor(n, 'delim', nil, visitor, style, false)
+  end,
+  -- [node.id'style'] = false,
 
   [node.id'sub_mlist'] = function(n, visitor, style, penalties)
     n.list = visit_list(n.list, visitor, style, penalties)
   end,
-  [node.id'math_char'] = false,
-  [node.id'sub_box'] = false,
-  [node.id'delim'] = false,
-}, {
-  __index = function(t, i)
-    print('Warning: Unhandled type ', node.type(i))
-    t[i] = false
-    return false
-  end
-})
+  -- [node.id'math_char'] = false,
+  -- [node.id'sub_box'] = false,
+  -- [node.id'delim'] = false,
+}
 
 return function(mappings)
   local function visitor(n, style, penalties)
