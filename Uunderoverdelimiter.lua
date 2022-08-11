@@ -41,8 +41,7 @@ local function clean_box(kernel, style)
       list = node.new'noad'
       list.nucleus = node.copy(kernel)
     end
-    print(list, list.nucleus)
-    list = node.mlist_to_hlist(list, mathutils.style_mapping[style], false)
+    list = list and node.mlist_to_hlist(list, mathutils.style_mapping[style], false) or node.new'hlist'
   end
   if list.id > 1 or list.next or list.shift ~= 0 then
     list = node.hpack(list)
@@ -55,8 +54,6 @@ end
 local my_mathmap = mathmap{
   [node.id'radical'] = function(n, style, penalties)
     local sub = n.subtype
-    print'!!!'
-    print(n, sub, uunderoverdelimiter)
     if sub ~= uunderoverdelimiter then
       return true
     end
@@ -72,9 +69,7 @@ local my_mathmap = mathmap{
     n.width = under.width < over.width and over.width or under.width
     local kernel = node.new'sub_mlist'
     kernel.list = n
-    print'custom_clean'
     local delim = clean_box(kernel, style)
-    print'post_clean'
     -- ATTENTION: n no longer exists here
 
     local stylename = mathutils.style_mapping[style]
@@ -87,7 +82,6 @@ local my_mathmap = mathmap{
     local min_under_vgap = under_bgap - under.height - delim.depth
     if over_vgap < min_over_vgap then over_vgap = min_over_vgap end
     if under_vgap < min_under_vgap then under_vgap = min_under_vgap end
-    print(over_bgap, over_vgap, under_bgap, under_vgap)
     local kern = node.new'kern'
     kern.kern = over_vgap
     over.next = kern

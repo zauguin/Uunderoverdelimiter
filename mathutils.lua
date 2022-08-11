@@ -12,6 +12,11 @@ local left_brace = token.command_id'left_brace'
 local spacer = token.command_id'spacer'
 local relax = token.command_id'relax'
 
+local letter = token.command_id'letter'
+local other = token.command_id'other'
+local char_given = token.command_id'char_given'
+local char_num = token.command_id'char_num'
+
 local after_group = token.new(0, token.command_id'after_group')
 
 -- Complicated...
@@ -50,8 +55,23 @@ local function scan_math(style_mapping)
     end)
     return kernel
   else
-    -- skip the other cases for now
-    error'TODO'
+    local class, family, cp
+    if cmd == letter or cmd == other or cmd == char_given or cmd == char_num then
+      local code = cmd == char_num and token.scan_int() or t.index
+      class, family, cp = tex.getmathcodes(code)
+      if class == 8 then
+        token.put_next(token.create(utf8.char(0xFFFF, code)))
+        return scan_math(style_mapping)
+      end
+    else
+      print(t, t.cmdname)
+      -- skip the other cases for now
+      error'TODO'
+    end
+    local char = node.new'math_char'
+    char.fam = class == 7 and tex.fam >= 0 and tex.fam < 0x100 and tex.fam or family
+    char.char = cp
+    return char
   end
 end
 
