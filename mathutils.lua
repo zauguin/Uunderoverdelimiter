@@ -16,6 +16,10 @@ local letter = token.command_id'letter'
 local other = token.command_id'other'
 local char_given = token.command_id'char_given'
 local char_num = token.command_id'char_num'
+local math_char_num = token.command_id'math_char_num'
+local math_given = token.command_id'math_given'
+local xmath_given = token.command_id'xmath_given'
+local delim_num = token.command_id'delim_num'
 
 local after_group = token.new(0, token.command_id'after_group')
 
@@ -63,10 +67,48 @@ local function scan_math(style_mapping)
         token.put_next(token.create(utf8.char(0xFFFF, code)))
         return scan_math(style_mapping)
       end
+    elseif cmd == math_char_num then
+      local value = token.scan_int()
+      if t.index == 0 and value > 0x8000 or t.index == 2 then
+        class = (value >> 21) & 0x7
+        family = (value >> 24) & 0xFF
+        cp = value & 0x1FFFFF
+      elseif t.index == 0 then
+        assert(value >= 0)
+        class = (value >> 12) & 0xF
+        family = (value >> 8) & 0xF
+        cp = value & 0xFF
+      elseif t.index == 1 then
+        class = value
+        family = token.scan_int()
+        cp = token.scan_int()
+      else
+        assert(false)
+      end
+    elseif cmd == math_given then
+      class = (t.index >> 12) & 0xF
+      family = (t.index >> 8) & 0xF
+      cp = t.index & 0xFF
+    elseif cmd == xmath_given then
+      class = (t.index >> 21) & 0x7
+      family = (t.index >> 24) & 0xFF
+      cp = t.index & 0x1FFFFF
+    elseif cmd == delim_num then
+      if t.index == 0 then
+        local value = token.scan_int()
+        class = (value >> 24) & 0xF
+        family = (value >> 20) & 0xF
+        cp = (value >> 12) & 0xFF
+      elseif t.index == 1 then
+        class = token.scan_int()
+        family = token.scan_int()
+        cp = token.scan_int()
+      else
+        assert(false)
+      end
     else
-      print(t, t.cmdname)
-      -- skip the other cases for now
-      error'TODO'
+      tex.error"A { was required here"
+      class, family, cp = 0, 0, 0
     end
     local char = node.new'math_char'
     char.fam = class == 7 and tex.fam >= 0 and tex.fam < 0x100 and tex.fam or family
