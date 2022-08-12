@@ -164,13 +164,3 @@ return function(mappings)
     return visit_list(head, visitor, style, penalties)
   end
 end
-
---[[
-return {
-  mmode = mmode,
-  scan_math = scan_math,
-  sub_style = sub_style,
-  sup_style = sup_style,
-  style_mapping = style_mapping,
-}
-]]
