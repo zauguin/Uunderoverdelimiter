@@ -45,7 +45,11 @@ local function scan_math(style_mapping)
       token.put_next(t)
     end)
     local noad = this_nest.tail
-    this_nest.tail = noad.prev
+    do
+      local new_tail = noad.prev
+      this_nest.tail, new_tail.next = new_tail, nil
+    end
+
     local kernel = noad.nucleus
     noad.nucleus = nil
     node.free(noad)
